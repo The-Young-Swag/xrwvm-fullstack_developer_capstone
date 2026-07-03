@@ -25,4 +25,3 @@ class CarMakeAdmin(admin.ModelAdmin):
 # Register the models with their admin classes
 admin.site.register(CarMake, CarMakeAdmin)
 admin.site.register(CarModel, CarModelAdmin)
-
