@@ -117,17 +117,32 @@ def get_dealer_details(request, dealer_id):
 
 
 def get_dealer_reviews(request, dealer_id):
-    # if dealer id has been provided
-    if(dealer_id):
-        endpoint = "/fetchReviews/dealer/"+str(dealer_id)
+    if not dealer_id:
+        return JsonResponse({"status": 400, "message": "Bad Request"})
+
+    endpoint = "/fetchReviews/dealer/" + str(dealer_id)
+    try:
         reviews = get_request(endpoint)
+        # If backend returned None or empty, treat as no reviews
+        if reviews is None:
+            reviews = []
+
         for review_detail in reviews:
-            response = analyze_review_sentiments(review_detail['review'])
-            print(response)
-            review_detail['sentiment'] = response['sentiment']
-        return JsonResponse({"status":200,"reviews":reviews})
-    else:
-        return JsonResponse({"status":400,"message":"Bad Request"})
+            if isinstance(review_detail, dict) and 'review' in review_detail:
+                try:
+                    response = analyze_review_sentiments(review_detail['review'])
+                    review_detail['sentiment'] = response.get('sentiment', 'neutral')
+                except Exception:
+                    # If sentiment analysis fails, default to neutral
+                    review_detail['sentiment'] = 'neutral'
+            else:
+                # If the review is missing the review text, still set a default sentiment
+                review_detail['sentiment'] = 'neutral'
+
+        return JsonResponse({"status": 200, "reviews": reviews})
+    except Exception as e:
+        print("Error in get_dealer_reviews:", e)
+        return JsonResponse({"status": 200, "reviews": []})
 
 
 def add_review(request):
